@@ -36,7 +36,7 @@ export const useUpdateKyc = () => {
             if (adharaFile) formData.append("adhara_img", adharaFile);
             if (panFile) formData.append("pan_img", panFile);
 
-            const res = await fetch("http://31.97.224.160:8030/api/kyc/update", {
+            const res = await fetch("https://api.mybmpl.com/api/kyc/update", {
                 method: "PUT",
                 headers: {
                     Authorization: `Bearer ${getaccesstoken}`,

@@ -1,48 +1,64 @@
 import { useCallback, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
+const MAX_FILE_SIZE = 1048576; // 1MB
+
 export const useUpdateKyc = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(false);
 
-  const {getaccesstoken}=useAuth();
+    const { getaccesstoken } = useAuth();
 
-  const updateKyc = useCallback(async (adharaFile, panFile) => {
+    const updateKyc = useCallback(async (adharaFile, panFile) => {
+        setLoading(true);
+        setError(null);
+        setSuccess(false);
 
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
+        // -------- FRONTEND VALIDATION -----------
+        try {
+            if (adharaFile && adharaFile.size > MAX_FILE_SIZE) {
+                throw new Error("Aadhaar file size cannot exceed 1 MB.");
+            }
 
-    try {
-      const formData = new FormData();
-      if (adharaFile) formData.append("adhara_img", adharaFile);
-      if (panFile) formData.append("pan_img", panFile);
+            if (panFile && panFile.size > MAX_FILE_SIZE) {
+                throw new Error("PAN file size cannot exceed 1 MB.");
+            }
+        } catch (validationError) {
+            setError(validationError.message);
+            setLoading(false);
+            return null;
+        }
 
-      const res = await fetch("https://api.mybmpl.com/api/kyc/update", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${getaccesstoken}`,
-        },
-        body: formData,
-      });
+        // -------- API CALL ---------------
+        try {
+            const formData = new FormData();
+            if (adharaFile) formData.append("adhara_img", adharaFile);
+            if (panFile) formData.append("pan_img", panFile);
 
-      const data = await res.json();
+            const res = await fetch("http://31.97.224.160:8030/api/kyc/update", {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${getaccesstoken}`,
+                },
+                body: formData,
+            });
 
-      if (!res.ok) {
-        throw new Error(data.msg || "Failed to update KYC");
-      }
+            const data = await res.json();
 
-      setSuccess(true);
-      return data;
-    } catch (err) {
-      console.error("KYC update error:", err);
-      setError(err.message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+            if (!res.ok || data.success === false) {
+                throw new Error(data.msg || "An unknown error occurred while updating KYC.");
+            }
 
-  return { updateKyc, loading, error, success };
+            setSuccess(true);
+            return data;
+        } catch (err) {
+            setError(err.message);
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, [getaccesstoken]);
+
+    return { updateKyc, loading, error, success };
 };

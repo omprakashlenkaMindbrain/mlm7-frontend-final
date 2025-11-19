@@ -1,7 +1,7 @@
 export const useLogin = () => {
   const login = async (credentials) => {
     try {
-      const res = await fetch("https://api.mybmpl.com/api/sessions", {
+      const res = await fetch("http://31.97.224.160:8030/api/sessions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
